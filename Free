@@ -9,6 +9,7 @@ local player = Players.LocalPlayer
 -- Config
 local Config = {
     Size = UDim2.new(0, 500, 0, 400),
+    Transparency = false,
     Colors = {
         Background = Color3.fromRGB(25, 25, 25),
         Sidebar = Color3.fromRGB(30, 30, 30),
@@ -582,6 +583,17 @@ function NovaUI:CreateSection(tab, title)
     line.Parent = sec
     
     return sec
+end
+
+-- Функция для включения/выключения прозрачности
+function NovaUI:SetTransparency(enabled)
+    Config.Transparency = enabled
+    -- Если окно уже создано, применяем прозрачность
+    if self.CurrentWindow then
+        local trans = enabled and 0.3 or 0
+        self.CurrentWindow.Main.BackgroundTransparency = trans
+        self.CurrentWindow.Sidebar.BackgroundTransparency = trans
+    end
 end
 
 return NovaUI
