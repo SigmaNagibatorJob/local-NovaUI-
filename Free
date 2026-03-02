@@ -558,3 +558,5 @@ function NovaUI:CreateSection(tab, title)
     
     return sec
 end
+
+return NovaUI
