@@ -84,6 +84,9 @@ function NovaUI:CreateWindow(title)
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
     main.Parent = gui
+    if Config.Transparency then
+        main.BackgroundTransparency = 0.3
+    end
     
     Corner(main, 8)
     
@@ -146,6 +149,9 @@ function NovaUI:CreateWindow(title)
     sidebar.BackgroundColor3 = Config.Colors.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
+    if Config.Transparency then
+        sidebar.BackgroundTransparency = 0.3
+    end
     
     local divider = Instance.new("Frame")
     divider.Size = UDim2.new(0, 1, 1, 0)
