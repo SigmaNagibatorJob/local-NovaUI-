@@ -9,17 +9,35 @@ local player = Players.LocalPlayer
 -- Config
 local Config = {
     Size = UDim2.new(0, 500, 0, 400),
+    Transparency = false,
+    Theme = "Dark", -- "Dark" или "Light"
+    CustomBackground = nil, -- URL картинки или nil
     Colors = {
-        Background = Color3.fromRGB(25, 25, 25),
-        Sidebar = Color3.fromRGB(30, 30, 30),
-        Accent = Color3.fromRGB(0, 120, 215),
-        Text = Color3.fromRGB(255, 255, 255),
-        SecondaryText = Color3.fromRGB(180, 180, 180),
-        Hover = Color3.fromRGB(45, 45, 45),
-        Selected = Color3.fromRGB(55, 55, 55),
-        Border = Color3.fromRGB(60, 60, 60)
+        Dark = {
+            Background = Color3.fromRGB(25, 25, 25),
+            Sidebar = Color3.fromRGB(30, 30, 30),
+            Accent = Color3.fromRGB(0, 120, 215),
+            Text = Color3.fromRGB(255, 255, 255),
+            SecondaryText = Color3.fromRGB(180, 180, 180),
+            Hover = Color3.fromRGB(45, 45, 45),
+            Selected = Color3.fromRGB(55, 55, 55),
+            Border = Color3.fromRGB(60, 60, 60)
+        },
+        Light = {
+            Background = Color3.fromRGB(245, 245, 245),
+            Sidebar = Color3.fromRGB(235, 235, 235),
+            Accent = Color3.fromRGB(0, 120, 215),
+            Text = Color3.fromRGB(30, 30, 30),
+            SecondaryText = Color3.fromRGB(100, 100, 100),
+            Hover = Color3.fromRGB(220, 220, 220),
+            Selected = Color3.fromRGB(210, 210, 210),
+            Border = Color3.fromRGB(200, 200, 200)
+        }
     }
 }
+
+-- Текущие цвета
+local CurrentColors = Config.Colors.Dark
 
 -- Utils
 local function Tween(obj, props, dur)
@@ -33,6 +51,25 @@ local function Corner(parent, r)
     return c
 end
 
+-- Обновление цветов интерфейса
+local function UpdateTheme(window)
+    CurrentColors = Config.Colors[Config.Theme]
+    
+    Tween(window.Main, {BackgroundColor3 = CurrentColors.Background})
+    Tween(window.Sidebar, {BackgroundColor3 = CurrentColors.Sidebar})
+    
+    -- Обновить цвета текста во всех элементах
+    for _, tab in pairs(window.Tabs) do
+        if not tab.Active then
+            local txt = tab.Button:FindFirstChild("Text")
+            if txt then txt.TextColor3 = CurrentColors.SecondaryText end
+        else
+            local txt = tab.Button:FindFirstChild("Text")
+            if txt then txt.TextColor3 = CurrentColors.Text end
+        end
+    end
+end
+
 -- Select Tab
 local function SelectTab(window, tab)
     if window.ActiveTab == tab then return end
@@ -40,16 +77,14 @@ local function SelectTab(window, tab)
     if window.ActiveTab then
         local prev = window.ActiveTab
         prev.Active = false
-        Tween(prev.Button, {BackgroundColor3 = Config.Colors.Sidebar})
+        Tween(prev.Button, {BackgroundColor3 = CurrentColors.Sidebar})
         prev.Button.Indicator.Size = UDim2.new(0, 3, 0, 0)
         
         local prevText = prev.Button:FindFirstChild("Text")
-        if prevText then
-            prevText.TextColor3 = Config.Colors.SecondaryText
-        end
+        if prevText then prevText.TextColor3 = CurrentColors.SecondaryText end
         
         if prev.Button:FindFirstChild("Icon") then
-            prev.Button.Icon.ImageColor3 = Config.Colors.SecondaryText
+            prev.Button.Icon.ImageColor3 = CurrentColors.SecondaryText
         end
         prev.Content.Visible = false
     end
@@ -57,16 +92,14 @@ local function SelectTab(window, tab)
     tab.Active = true
     window.ActiveTab = tab
     tab.Content.Visible = true
-    Tween(tab.Button, {BackgroundColor3 = Config.Colors.Selected})
+    Tween(tab.Button, {BackgroundColor3 = CurrentColors.Selected})
     Tween(tab.Button.Indicator, {Size = UDim2.new(0, 3, 0, 20)})
     
     local tabText = tab.Button:FindFirstChild("Text")
-    if tabText then
-        tabText.TextColor3 = Config.Colors.Text
-    end
+    if tabText then tabText.TextColor3 = CurrentColors.Text end
     
     if tab.Button:FindFirstChild("Icon") then
-        tab.Button.Icon.ImageColor3 = Config.Colors.Accent
+        tab.Button.Icon.ImageColor3 = CurrentColors.Accent
     end
     tab.Content.Position = UDim2.new(0, 10, 0, 0)
     Tween(tab.Content, {Position = UDim2.new(0, 0, 0, 0)})
@@ -74,6 +107,8 @@ end
 
 -- Create Window
 function NovaUI:CreateWindow(title)
+    CurrentColors = Config.Colors[Config.Theme]
+    
     local gui = Instance.new("ScreenGui")
     gui.Name = "NovaUI"
     gui.ResetOnSpawn = false
@@ -83,10 +118,28 @@ function NovaUI:CreateWindow(title)
     local main = Instance.new("Frame")
     main.Size = Config.Size
     main.Position = UDim2.new(0.5, -250, 0.5, -200)
-    main.BackgroundColor3 = Config.Colors.Background
+    main.BackgroundColor3 = CurrentColors.Background
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
     main.Parent = gui
+    
+    -- Кастомный фон
+    local bgImage = nil
+    if Config.CustomBackground then
+        bgImage = Instance.new("ImageLabel")
+        bgImage.Name = "BackgroundImage"
+        bgImage.Size = UDim2.new(1, 0, 1, 0)
+        bgImage.BackgroundTransparency = 1
+        bgImage.Image = Config.CustomBackground
+        bgImage.ScaleType = Enum.ScaleType.Crop
+        bgImage.ImageTransparency = Config.Transparency and 0.3 or 0.1
+        bgImage.Parent = main
+    end
+    
+    -- Прозрачность фона
+    if Config.Transparency then
+        main.BackgroundTransparency = 0.3
+    end
     
     Corner(main, 8)
     
@@ -103,7 +156,7 @@ function NovaUI:CreateWindow(title)
     shadow.Parent = main
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Config.Colors.Border
+    stroke.Color = CurrentColors.Border
     stroke.Parent = main
     
     main.Size = UDim2.new(0, 0, 0, 0)
@@ -112,16 +165,20 @@ function NovaUI:CreateWindow(title)
     
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 40)
-    titleBar.BackgroundColor3 = Config.Colors.Sidebar
+    titleBar.BackgroundColor3 = CurrentColors.Sidebar
     titleBar.BorderSizePixel = 0
     titleBar.Parent = main
+    
+    if Config.Transparency then
+        titleBar.BackgroundTransparency = 0.3
+    end
     
     local titleText = Instance.new("TextLabel")
     titleText.Size = UDim2.new(1, -100, 1, 0)
     titleText.Position = UDim2.new(0, 15, 0, 0)
     titleText.BackgroundTransparency = 1
     titleText.Text = title or "Nova UI"
-    titleText.TextColor3 = Config.Colors.Text
+    titleText.TextColor3 = CurrentColors.Text
     titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamSemibold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -132,13 +189,13 @@ function NovaUI:CreateWindow(title)
     close.Position = UDim2.new(1, -40, 0, 0)
     close.BackgroundTransparency = 1
     close.Text = "×"
-    close.TextColor3 = Config.Colors.SecondaryText
+    close.TextColor3 = CurrentColors.SecondaryText
     close.TextSize = 24
     close.Font = Enum.Font.Gotham
     close.Parent = titleBar
     
     close.MouseEnter:Connect(function() Tween(close, {TextColor3 = Color3.fromRGB(255, 100, 100)}) end)
-    close.MouseLeave:Connect(function() Tween(close, {TextColor3 = Config.Colors.SecondaryText}) end)
+    close.MouseLeave:Connect(function() Tween(close, {TextColor3 = CurrentColors.SecondaryText}) end)
     close.MouseButton1Click:Connect(function()
         Tween(main, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3).Completed:Connect(function() gui:Destroy() end)
     end)
@@ -146,14 +203,18 @@ function NovaUI:CreateWindow(title)
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 140, 1, -40)
     sidebar.Position = UDim2.new(0, 0, 0, 40)
-    sidebar.BackgroundColor3 = Config.Colors.Sidebar
+    sidebar.BackgroundColor3 = CurrentColors.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
+    
+    if Config.Transparency then
+        sidebar.BackgroundTransparency = 0.3
+    end
     
     local divider = Instance.new("Frame")
     divider.Size = UDim2.new(0, 1, 1, 0)
     divider.Position = UDim2.new(1, 0, 0, 0)
-    divider.BackgroundColor3 = Config.Colors.Border
+    divider.BackgroundColor3 = CurrentColors.Border
     divider.BorderSizePixel = 0
     divider.Parent = sidebar
     
@@ -183,14 +244,20 @@ function NovaUI:CreateWindow(title)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     
-    return {
+    local Window = {
         Gui = gui,
         Main = main,
         Sidebar = sidebar,
         Content = content,
         Tabs = {},
-        ActiveTab = nil
+        ActiveTab = nil,
+        BackgroundImage = bgImage
     }
+    
+    -- Сохраняем для обновления темы
+    NovaUI.CurrentWindow = Window
+    
+    return Window
 end
 
 -- Create Tab
@@ -200,11 +267,15 @@ function NovaUI:CreateTab(window, name, icon)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 36)
     btn.Position = UDim2.new(0, 5, 0, 10 + (id - 1) * 42)
-    btn.BackgroundColor3 = Config.Colors.Sidebar
+    btn.BackgroundColor3 = CurrentColors.Sidebar
     btn.BorderSizePixel = 0
     btn.Text = ""
     btn.AutoButtonColor = false
     btn.Parent = window.Sidebar
+    
+    if Config.Transparency then
+        btn.BackgroundTransparency = 0.3
+    end
     
     Corner(btn, 6)
     
@@ -215,7 +286,7 @@ function NovaUI:CreateTab(window, name, icon)
         img.Position = UDim2.new(0, 10, 0.5, -10)
         img.BackgroundTransparency = 1
         img.Image = icon
-        img.ImageColor3 = Config.Colors.SecondaryText
+        img.ImageColor3 = CurrentColors.SecondaryText
         img.Parent = btn
     end
     
@@ -225,7 +296,7 @@ function NovaUI:CreateTab(window, name, icon)
     txt.Position = UDim2.new(0, icon and 35 or 15, 0, 0)
     txt.BackgroundTransparency = 1
     txt.Text = name
-    txt.TextColor3 = Config.Colors.SecondaryText
+    txt.TextColor3 = CurrentColors.SecondaryText
     txt.TextSize = 14
     txt.Font = Enum.Font.GothamMedium
     txt.TextXAlignment = Enum.TextXAlignment.Left
@@ -235,7 +306,7 @@ function NovaUI:CreateTab(window, name, icon)
     ind.Name = "Indicator"
     ind.Size = UDim2.new(0, 3, 0, 0)
     ind.Position = UDim2.new(0, 0, 0.5, 0)
-    ind.BackgroundColor3 = Config.Colors.Accent
+    ind.BackgroundColor3 = CurrentColors.Accent
     ind.BorderSizePixel = 0
     ind.Parent = btn
     Corner(ind, 2)
@@ -246,7 +317,7 @@ function NovaUI:CreateTab(window, name, icon)
     tabContent.BackgroundTransparency = 1
     tabContent.BorderSizePixel = 0
     tabContent.ScrollBarThickness = 4
-    tabContent.ScrollBarImageColor3 = Config.Colors.Accent
+    tabContent.ScrollBarImageColor3 = CurrentColors.Accent
     tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
     tabContent.Visible = false
     tabContent.Parent = window.Content
@@ -270,11 +341,11 @@ function NovaUI:CreateTab(window, name, icon)
     }
     
     btn.MouseEnter:Connect(function()
-        if not tab.Active then Tween(btn, {BackgroundColor3 = Config.Colors.Hover}) end
+        if not tab.Active then Tween(btn, {BackgroundColor3 = CurrentColors.Hover}) end
     end)
     
     btn.MouseLeave:Connect(function()
-        if not tab.Active then Tween(btn, {BackgroundColor3 = Config.Colors.Sidebar}) end
+        if not tab.Active then Tween(btn, {BackgroundColor3 = CurrentColors.Sidebar}) end
     end)
     
     btn.MouseButton1Click:Connect(function() SelectTab(window, tab) end)
@@ -290,19 +361,23 @@ end
 function NovaUI:CreateButton(tab, text, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 36)
-    btn.BackgroundColor3 = Config.Colors.Accent
+    btn.BackgroundColor3 = CurrentColors.Accent
     btn.BorderSizePixel = 0
     btn.Text = text
-    btn.TextColor3 = Config.Colors.Text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255) -- Кнопки всегда белый текст
     btn.TextSize = 14
     btn.Font = Enum.Font.GothamSemibold
     btn.AutoButtonColor = false
     btn.Parent = tab.Content
     
+    if Config.Transparency then
+        btn.BackgroundTransparency = 0.2
+    end
+    
     Corner(btn, 6)
     
     btn.MouseEnter:Connect(function() Tween(btn, {BackgroundColor3 = Color3.fromRGB(0, 140, 255)}) end)
-    btn.MouseLeave:Connect(function() Tween(btn, {BackgroundColor3 = Config.Colors.Accent}) end)
+    btn.MouseLeave:Connect(function() Tween(btn, {BackgroundColor3 = CurrentColors.Accent}) end)
     btn.MouseButton1Click:Connect(callback or function() end)
     
     return btn
@@ -311,17 +386,21 @@ end
 function NovaUI:CreateToggle(tab, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = Config.Colors.Hover
+    frame.BackgroundColor3 = CurrentColors.Hover
     frame.BorderSizePixel = 0
     frame.Parent = tab.Content
     Corner(frame, 6)
+    
+    if Config.Transparency then
+        frame.BackgroundTransparency = 0.3
+    end
     
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1, -70, 1, 0)
     lbl.Position = UDim2.new(0, 15, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
-    lbl.TextColor3 = Config.Colors.Text
+    lbl.TextColor3 = CurrentColors.Text
     lbl.TextSize = 14
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -330,7 +409,7 @@ function NovaUI:CreateToggle(tab, text, default, callback)
     local toggle = Instance.new("TextButton")
     toggle.Size = UDim2.new(0, 44, 0, 24)
     toggle.Position = UDim2.new(1, -59, 0.5, -12)
-    toggle.BackgroundColor3 = default and Config.Colors.Accent or Config.Colors.Border
+    toggle.BackgroundColor3 = default and CurrentColors.Accent or CurrentColors.Border
     toggle.BorderSizePixel = 0
     toggle.Text = ""
     toggle.AutoButtonColor = false
@@ -348,7 +427,7 @@ function NovaUI:CreateToggle(tab, text, default, callback)
     local enabled = default or false
     toggle.MouseButton1Click:Connect(function()
         enabled = not enabled
-        Tween(toggle, {BackgroundColor3 = enabled and Config.Colors.Accent or Config.Colors.Border})
+        Tween(toggle, {BackgroundColor3 = enabled and CurrentColors.Accent or CurrentColors.Border})
         Tween(circle, {Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)})
         if callback then callback(enabled) end
     end)
@@ -359,17 +438,21 @@ end
 function NovaUI:CreateSlider(tab, text, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 60)
-    frame.BackgroundColor3 = Config.Colors.Hover
+    frame.BackgroundColor3 = CurrentColors.Hover
     frame.BorderSizePixel = 0
     frame.Parent = tab.Content
     Corner(frame, 6)
+    
+    if Config.Transparency then
+        frame.BackgroundTransparency = 0.3
+    end
     
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1, -30, 0, 20)
     lbl.Position = UDim2.new(0, 15, 0, 8)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
-    lbl.TextColor3 = Config.Colors.Text
+    lbl.TextColor3 = CurrentColors.Text
     lbl.TextSize = 14
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -380,7 +463,7 @@ function NovaUI:CreateSlider(tab, text, min, max, default, callback)
     val.Position = UDim2.new(1, -65, 0, 8)
     val.BackgroundTransparency = 1
     val.Text = tostring(default)
-    val.TextColor3 = Config.Colors.Accent
+    val.TextColor3 = CurrentColors.Accent
     val.TextSize = 14
     val.Font = Enum.Font.GothamBold
     val.TextXAlignment = Enum.TextXAlignment.Right
@@ -389,14 +472,14 @@ function NovaUI:CreateSlider(tab, text, min, max, default, callback)
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, -30, 0, 6)
     bg.Position = UDim2.new(0, 15, 0, 38)
-    bg.BackgroundColor3 = Config.Colors.Border
+    bg.BackgroundColor3 = CurrentColors.Border
     bg.BorderSizePixel = 0
     bg.Parent = frame
     Corner(bg, 3)
     
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Config.Colors.Accent
+    fill.BackgroundColor3 = CurrentColors.Accent
     fill.BorderSizePixel = 0
     fill.Parent = bg
     Corner(fill, 3)
@@ -440,11 +523,15 @@ end
 function NovaUI:CreateDropdown(tab, text, options, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = Config.Colors.Hover
+    frame.BackgroundColor3 = CurrentColors.Hover
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.Parent = tab.Content
     Corner(frame, 6)
+    
+    if Config.Transparency then
+        frame.BackgroundTransparency = 0.3
+    end
     
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 40)
@@ -457,7 +544,7 @@ function NovaUI:CreateDropdown(tab, text, options, callback)
     lbl.Position = UDim2.new(0, 15, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
-    lbl.TextColor3 = Config.Colors.Text
+    lbl.TextColor3 = CurrentColors.Text
     lbl.TextSize = 14
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -468,7 +555,7 @@ function NovaUI:CreateDropdown(tab, text, options, callback)
     sel.Position = UDim2.new(1, -130, 0, 0)
     sel.BackgroundTransparency = 1
     sel.Text = options[1] or "Select..."
-    sel.TextColor3 = Config.Colors.SecondaryText
+    sel.TextColor3 = CurrentColors.SecondaryText
     sel.TextSize = 14
     sel.Font = Enum.Font.Gotham
     sel.TextXAlignment = Enum.TextXAlignment.Right
@@ -479,7 +566,7 @@ function NovaUI:CreateDropdown(tab, text, options, callback)
     arrow.Position = UDim2.new(1, -25, 0, 0)
     arrow.BackgroundTransparency = 1
     arrow.Text = "▼"
-    arrow.TextColor3 = Config.Colors.SecondaryText
+    arrow.TextColor3 = CurrentColors.SecondaryText
     arrow.TextSize = 12
     arrow.Font = Enum.Font.Gotham
     arrow.Parent = btn
@@ -487,7 +574,7 @@ function NovaUI:CreateDropdown(tab, text, options, callback)
     local opts = Instance.new("Frame")
     opts.Size = UDim2.new(1, 0, 0, #options * 32)
     opts.Position = UDim2.new(0, 0, 0, 40)
-    opts.BackgroundColor3 = Config.Colors.Hover
+    opts.BackgroundColor3 = CurrentColors.Hover
     opts.BorderSizePixel = 0
     opts.Visible = false
     opts.Parent = frame
@@ -500,12 +587,12 @@ function NovaUI:CreateDropdown(tab, text, options, callback)
         b.Position = UDim2.new(0, 0, 0, (i-1) * 32)
         b.BackgroundTransparency = 1
         b.Text = opt
-        b.TextColor3 = Config.Colors.SecondaryText
+        b.TextColor3 = CurrentColors.SecondaryText
         b.TextSize = 14
         b.Font = Enum.Font.Gotham
         b.Parent = opts
         
-        b.MouseEnter:Connect(function() Tween(b, {BackgroundTransparency = 0.9, BackgroundColor3 = Config.Colors.Accent}) end)
+        b.MouseEnter:Connect(function() Tween(b, {BackgroundTransparency = 0.9, BackgroundColor3 = CurrentColors.Accent}) end)
         b.MouseLeave:Connect(function() Tween(b, {BackgroundTransparency = 1}) end)
         b.MouseButton1Click:Connect(function()
             sel.Text = opt
@@ -543,7 +630,7 @@ function NovaUI:CreateSection(tab, title)
     lbl.Size = UDim2.new(1, 0, 1, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = title
-    lbl.TextColor3 = Config.Colors.Accent
+    lbl.TextColor3 = CurrentColors.Accent
     lbl.TextSize = 12
     lbl.Font = Enum.Font.GothamBold
     lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -552,11 +639,38 @@ function NovaUI:CreateSection(tab, title)
     local line = Instance.new("Frame")
     line.Size = UDim2.new(1, 0, 0, 1)
     line.Position = UDim2.new(0, 0, 1, -1)
-    line.BackgroundColor3 = Config.Colors.Border
+    line.BackgroundColor3 = CurrentColors.Border
     line.BorderSizePixel = 0
     line.Parent = sec
     
     return sec
+end
+
+-- НАСТРОЙКИ
+function NovaUI:SetTransparency(enabled)
+    Config.Transparency = enabled
+    if self.CurrentWindow then
+        local trans = enabled and 0.3 or 0
+        self.CurrentWindow.Main.BackgroundTransparency = trans
+        self.CurrentWindow.Sidebar.BackgroundTransparency = trans
+        -- Обновить все элементы...
+    end
+end
+
+function NovaUI:SetTheme(themeName)
+    if Config.Colors[themeName] then
+        Config.Theme = themeName
+        if self.CurrentWindow then
+            UpdateTheme(self.CurrentWindow)
+        end
+    end
+end
+
+function NovaUI:SetBackground(imageUrl)
+    Config.CustomBackground = imageUrl
+    if self.CurrentWindow and self.CurrentWindow.BackgroundImage then
+        self.CurrentWindow.BackgroundImage.Image = imageUrl
+    end
 end
 
 return NovaUI
