@@ -21,8 +21,6 @@ local Config = {
     }
 }
 
-local CurrentColors = Config.Colors
-
 -- Utils
 local function Tween(obj, props, dur)
     TweenService:Create(obj, TweenInfo.new(dur or 0.3, Enum.EasingStyle.Quart), props):Play()
@@ -33,41 +31,6 @@ local function Corner(parent, r)
     c.CornerRadius = UDim.new(0, r or 6)
     c.Parent = parent
     return c
-end
-
--- Select Tab
-local function SelectTab(window, tab)
-    if window.ActiveTab == tab then return end
-    
-    if window.ActiveTab then
-        local prev = window.ActiveTab
-        prev.Active = false
-        Tween(prev.Button, {BackgroundColor3 = CurrentColors.Sidebar})
-        prev.Button.Indicator.Size = UDim2.new(0, 3, 0, 0)
-        
-        local prevText = prev.Button:FindFirstChild("Text")
-        if prevText then prevText.TextColor3 = CurrentColors.SecondaryText end
-        
-        if prev.Button:FindFirstChild("Icon") then
-            prev.Button.Icon.ImageColor3 = CurrentColors.SecondaryText
-        end
-        prev.Content.Visible = false
-    end
-    
-    tab.Active = true
-    window.ActiveTab = tab
-    tab.Content.Visible = true
-    Tween(tab.Button, {BackgroundColor3 = CurrentColors.Selected})
-    Tween(tab.Button.Indicator, {Size = UDim2.new(0, 3, 0, 20)})
-    
-    local tabText = tab.Button:FindFirstChild("Text")
-    if tabText then tabText.TextColor3 = CurrentColors.Text end
-    
-    if tab.Button:FindFirstChild("Icon") then
-        tab.Button.Icon.ImageColor3 = CurrentColors.Accent
-    end
-    tab.Content.Position = UDim2.new(0, 10, 0, 0)
-    Tween(tab.Content, {Position = UDim2.new(0, 0, 0, 0)})
 end
 
 -- Create Window
@@ -81,36 +44,16 @@ function NovaUI:CreateWindow(title)
     local main = Instance.new("Frame")
     main.Size = Config.Size
     main.Position = UDim2.new(0.5, -250, 0.5, -200)
-    main.BackgroundColor3 = CurrentColors.Background
+    main.BackgroundColor3 = Config.Colors.Background
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
     main.Parent = gui
     
     Corner(main, 8)
     
-    local shadow = Instance.new("ImageLabel")
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://5554236805"
-    shadow.ImageColor3 = Color3.new(0, 0, 0)
-    shadow.ImageTransparency = 0.6
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(23, 23, 277, 277)
-    shadow.Size = UDim2.new(1, 40, 1, 40)
-    shadow.Position = UDim2.new(0, -20, 0, -20)
-    shadow.ZIndex = -1
-    shadow.Parent = main
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = CurrentColors.Border
-    stroke.Parent = main
-    
-    main.Size = UDim2.new(0, 0, 0, 0)
-    main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Tween(main, {Size = Config.Size, Position = UDim2.new(0.5, -250, 0.5, -200)}, 0.5)
-    
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 40)
-    titleBar.BackgroundColor3 = CurrentColors.Sidebar
+    titleBar.BackgroundColor3 = Config.Colors.Sidebar
     titleBar.BorderSizePixel = 0
     titleBar.Parent = main
     
@@ -119,7 +62,7 @@ function NovaUI:CreateWindow(title)
     titleText.Position = UDim2.new(0, 15, 0, 0)
     titleText.BackgroundTransparency = 1
     titleText.Text = title or "Nova UI"
-    titleText.TextColor3 = CurrentColors.Text
+    titleText.TextColor3 = Config.Colors.Text
     titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamSemibold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -130,30 +73,21 @@ function NovaUI:CreateWindow(title)
     close.Position = UDim2.new(1, -40, 0, 0)
     close.BackgroundTransparency = 1
     close.Text = "×"
-    close.TextColor3 = CurrentColors.SecondaryText
+    close.TextColor3 = Config.Colors.SecondaryText
     close.TextSize = 24
     close.Font = Enum.Font.Gotham
     close.Parent = titleBar
     
-    close.MouseEnter:Connect(function() Tween(close, {TextColor3 = Color3.fromRGB(255, 100, 100)}) end)
-    close.MouseLeave:Connect(function() Tween(close, {TextColor3 = CurrentColors.SecondaryText}) end)
     close.MouseButton1Click:Connect(function()
-        Tween(main, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3).Completed:Connect(function() gui:Destroy() end)
+        gui:Destroy()
     end)
     
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 140, 1, -40)
     sidebar.Position = UDim2.new(0, 0, 0, 40)
-    sidebar.BackgroundColor3 = CurrentColors.Sidebar
+    sidebar.BackgroundColor3 = Config.Colors.Sidebar
     sidebar.BorderSizePixel = 0
     sidebar.Parent = main
-    
-    local divider = Instance.new("Frame")
-    divider.Size = UDim2.new(0, 1, 1, 0)
-    divider.Position = UDim2.new(1, 0, 0, 0)
-    divider.BackgroundColor3 = CurrentColors.Border
-    divider.BorderSizePixel = 0
-    divider.Parent = sidebar
     
     local content = Instance.new("Frame")
     content.Size = UDim2.new(1, -140, 1, -40)
@@ -161,452 +95,64 @@ function NovaUI:CreateWindow(title)
     content.BackgroundTransparency = 1
     content.Parent = main
     
-    local dragging, dragStart, startPos
-    titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = main.Position
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-    end)
-    
-    local Window = {
+    return {
         Gui = gui,
         Main = main,
         Sidebar = sidebar,
         Content = content,
-        Tabs = {},
-        ActiveTab = nil
+        Tabs = {}
     }
-    
-    NovaUI.CurrentWindow = Window
-    
-    return Window
 end
 
 -- Create Tab
-function NovaUI:CreateTab(window, name, icon)
-    local id = #window.Tabs + 1
-    
+function NovaUI:CreateTab(window, name)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 36)
-    btn.Position = UDim2.new(0, 5, 0, 10 + (id - 1) * 42)
-    btn.BackgroundColor3 = CurrentColors.Sidebar
+    btn.Position = UDim2.new(0, 5, 0, 10 + (#window.Tabs * 42))
+    btn.BackgroundColor3 = Config.Colors.Sidebar
     btn.BorderSizePixel = 0
-    btn.Text = ""
-    btn.AutoButtonColor = false
+    btn.Text = name
+    btn.TextColor3 = Config.Colors.SecondaryText
+    btn.TextSize = 14
+    btn.Font = Enum.Font.GothamMedium
     btn.Parent = window.Sidebar
     
     Corner(btn, 6)
     
-    if icon then
-        local img = Instance.new("ImageLabel")
-        img.Name = "Icon"
-        img.Size = UDim2.new(0, 20, 0, 20)
-        img.Position = UDim2.new(0, 10, 0.5, -10)
-        img.BackgroundTransparency = 1
-        img.Image = icon
-        img.ImageColor3 = CurrentColors.SecondaryText
-        img.Parent = btn
-    end
-    
-    local txt = Instance.new("TextLabel")
-    txt.Name = "Text"
-    txt.Size = UDim2.new(1, icon and -40 or -20, 1, 0)
-    txt.Position = UDim2.new(0, icon and 35 or 15, 0, 0)
-    txt.BackgroundTransparency = 1
-    txt.Text = name
-    txt.TextColor3 = CurrentColors.SecondaryText
-    txt.TextSize = 14
-    txt.Font = Enum.Font.GothamMedium
-    txt.TextXAlignment = Enum.TextXAlignment.Left
-    txt.Parent = btn
-    
-    local ind = Instance.new("Frame")
-    ind.Name = "Indicator"
-    ind.Size = UDim2.new(0, 3, 0, 0)
-    ind.Position = UDim2.new(0, 0, 0.5, 0)
-    ind.BackgroundColor3 = CurrentColors.Accent
-    ind.BorderSizePixel = 0
-    ind.Parent = btn
-    Corner(ind, 2)
-    
-    local tabContent = Instance.new("ScrollingFrame")
-    tabContent.Name = name .. "Content"
+    local tabContent = Instance.new("Frame")
     tabContent.Size = UDim2.new(1, 0, 1, 0)
     tabContent.BackgroundTransparency = 1
-    tabContent.BorderSizePixel = 0
-    tabContent.ScrollBarThickness = 4
-    tabContent.ScrollBarImageColor3 = CurrentColors.Accent
-    tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    tabContent.Visible = false
+    tabContent.Visible = (#window.Tabs == 0)
     tabContent.Parent = window.Content
     
-    local pad = Instance.new("UIPadding")
-    pad.PaddingLeft = UDim.new(0, 15)
-    pad.PaddingRight = UDim.new(0, 15)
-    pad.PaddingTop = UDim.new(0, 15)
-    pad.PaddingBottom = UDim.new(0, 15)
-    pad.Parent = tabContent
+    table.insert(window.Tabs, {Button = btn, Content = tabContent})
     
-    local list = Instance.new("UIListLayout")
-    list.Padding = UDim.new(0, 10)
-    list.Parent = tabContent
-    
-    local tab = {
-        Button = btn,
-        Content = tabContent,
-        Name = name,
-        Active = false
-    }
-    
-    btn.MouseEnter:Connect(function()
-        if not tab.Active then Tween(btn, {BackgroundColor3 = CurrentColors.Hover}) end
+    btn.MouseButton1Click:Connect(function()
+        for _, t in pairs(window.Tabs) do
+            t.Content.Visible = false
+        end
+        tabContent.Visible = true
     end)
     
-    btn.MouseLeave:Connect(function()
-        if not tab.Active then Tween(btn, {BackgroundColor3 = CurrentColors.Sidebar}) end
-    end)
-    
-    btn.MouseButton1Click:Connect(function() SelectTab(window, tab) end)
-    
-    table.insert(window.Tabs, tab)
-    
-    if id == 1 then task.delay(0.1, function() SelectTab(window, tab) end) end
-    
-    return tab
+    return tabContent
 end
 
 -- Create Button
 function NovaUI:CreateButton(tab, text, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 36)
-    btn.BackgroundColor3 = CurrentColors.Accent
+    btn.BackgroundColor3 = Config.Colors.Accent
     btn.BorderSizePixel = 0
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 14
     btn.Font = Enum.Font.GothamSemibold
-    btn.AutoButtonColor = false
-    btn.Parent = tab.Content
+    btn.Parent = tab
     
     Corner(btn, 6)
     
-    btn.MouseEnter:Connect(function() Tween(btn, {BackgroundColor3 = Color3.fromRGB(0, 140, 255)}) end)
-    btn.MouseLeave:Connect(function() Tween(btn, {BackgroundColor3 = CurrentColors.Accent}) end)
     btn.MouseButton1Click:Connect(callback or function() end)
-    
     return btn
-end
-
--- Create Toggle
-function NovaUI:CreateToggle(tab, text, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = CurrentColors.Hover
-    frame.BorderSizePixel = 0
-    frame.Parent = tab.Content
-    
-    Corner(frame, 6)
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -70, 1, 0)
-    lbl.Position = UDim2.new(0, 15, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = CurrentColors.Text
-    lbl.TextSize = 14
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = frame
-    
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0, 44, 0, 24)
-    toggleBtn.Position = UDim2.new(1, -59, 0.5, -12)
-    toggleBtn.BackgroundColor3 = default and CurrentColors.Accent or CurrentColors.Border
-    toggleBtn.BorderSizePixel = 0
-    toggleBtn.Text = ""
-    toggleBtn.AutoButtonColor = false
-    toggleBtn.Parent = frame
-    
-    Corner(toggleBtn, 12)
-    
-    local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(0, 18, 0, 18)
-    circle.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
-    circle.BackgroundColor3 = Color3.new(1, 1, 1)
-    circle.BorderSizePixel = 0
-    circle.Parent = toggleBtn
-    
-    Corner(circle, 9)
-    
-    local enabled = default or false
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        Tween(toggleBtn, {BackgroundColor3 = enabled and CurrentColors.Accent or CurrentColors.Border})
-        Tween(circle, {Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)})
-        if callback then callback(enabled) end
-    end)
-    
-    return frame
-end
-
--- Create Slider
-function NovaUI:CreateSlider(tab, text, min, max, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 60)
-    frame.BackgroundColor3 = CurrentColors.Hover
-    frame.BorderSizePixel = 0
-    frame.Parent = tab.Content
-    
-    Corner(frame, 6)
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -30, 0, 20)
-    lbl.Position = UDim2.new(0, 15, 0, 8)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = CurrentColors.Text
-    lbl.TextSize = 14
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = frame
-    
-    local valLabel = Instance.new("TextLabel")
-    valLabel.Size = UDim2.new(0, 50, 0, 20)
-    valLabel.Position = UDim2.new(1, -65, 0, 8)
-    valLabel.BackgroundTransparency = 1
-    valLabel.Text = tostring(default)
-    valLabel.TextColor3 = CurrentColors.Accent
-    valLabel.TextSize = 14
-    valLabel.Font = Enum.Font.GothamBold
-    valLabel.TextXAlignment = Enum.TextXAlignment.Right
-    valLabel.Parent = frame
-    
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, -30, 0, 6)
-    bg.Position = UDim2.new(0, 15, 0, 38)
-    bg.BackgroundColor3 = CurrentColors.Border
-    bg.BorderSizePixel = 0
-    bg.Parent = frame
-    
-    Corner(bg, 3)
-    
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = CurrentColors.Accent
-    fill.BorderSizePixel = 0
-    fill.Parent = bg
-    
-    Corner(fill, 3)
-    
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = UDim2.new((default - min) / (max - min), -8, 0.5, -8)
-    knob.BackgroundColor3 = Color3.new(1, 1, 1)
-    knob.BorderSizePixel = 0
-    knob.Parent = bg
-    
-    Corner(knob, 8)
-    
-    local dragging = false
-    local function update(input)
-        local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
-        local value = math.floor(min + (max - min) * pos)
-        
-        fill.Size = UDim2.new(pos, 0, 1, 0)
-        knob.Position = UDim2.new(pos, -8, 0.5, -8)
-        valLabel.Text = tostring(value)
-        
-        if callback then callback(value) end
-    end
-    
-    bg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            update(input)
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input)
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    return frame
-end
-
--- Create Dropdown
-function NovaUI:CreateDropdown(tab, text, options, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = CurrentColors.Hover
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-    frame.Parent = tab.Content
-    
-    Corner(frame, 6)
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = frame
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -50, 1, 0)
-    lbl.Position = UDim2.new(0, 15, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = CurrentColors.Text
-    lbl.TextSize = 14
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = btn
-    
-    local selected = Instance.new("TextLabel")
-    selected.Size = UDim2.new(0, 100, 1, 0)
-    selected.Position = UDim2.new(1, -130, 0, 0)
-    selected.BackgroundTransparency = 1
-    selected.Text = options[1] or "Select..."
-    selected.TextColor3 = CurrentColors.SecondaryText
-    selected.TextSize = 14
-    selected.Font = Enum.Font.Gotham
-    selected.TextXAlignment = Enum.TextXAlignment.Right
-    selected.Parent = btn
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -25, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = CurrentColors.SecondaryText
-    arrow.TextSize = 12
-    arrow.Font = Enum.Font.Gotham
-    arrow.Parent = btn
-    
-    local optsFrame = Instance.new("Frame")
-    optsFrame.Size = UDim2.new(1, 0, 0, #options * 32)
-    optsFrame.Position = UDim2.new(0, 0, 0, 40)
-    optsFrame.BackgroundColor3 = CurrentColors.Hover
-    optsFrame.BorderSizePixel = 0
-    optsFrame.Visible = false
-    optsFrame.Parent = frame
-    
-    local expanded = false
-    
-    for i, opt in ipairs(options) do
-        local b = Instance.new("TextButton")
-        b.Size = UDim2.new(1, 0, 0, 32)
-        b.Position = UDim2.new(0, 0, 0, (i-1) * 32)
-        b.BackgroundTransparency = 1
-        b.Text = opt
-        b.TextColor3 = CurrentColors.SecondaryText
-        b.TextSize = 14
-        b.Font = Enum.Font.Gotham
-        b.Parent = optsFrame
-        
-        b.MouseEnter:Connect(function()
-            Tween(b, {BackgroundTransparency = 0.9, BackgroundColor3 = CurrentColors.Accent})
-        end)
-        
-        b.MouseLeave:Connect(function()
-            Tween(b, {BackgroundTransparency = 1})
-        end)
-        
-        b.MouseButton1Click:Connect(function()
-            selected.Text = opt
-            expanded = false
-            Tween(frame, {Size = UDim2.new(1, 0, 0, 40)})
-            Tween(arrow, {Rotation = 0})
-            task.delay(0.2, function() optsFrame.Visible = false end)
-            if callback then callback(opt) end
-        end)
-    end
-    
-    btn.MouseButton1Click:Connect(function()
-        expanded = not expanded
-        if expanded then
-            optsFrame.Visible = true
-            Tween(frame, {Size = UDim2.new(1, 0, 0, 40 + #options * 32)})
-            Tween(arrow, {Rotation = 180})
-        else
-            Tween(frame, {Size = UDim2.new(1, 0, 0, 40)})
-            Tween(arrow, {Rotation = 0})
-            task.delay(0.2, function() optsFrame.Visible = false end)
-        end
-    end)
-    
-    return frame
-end
-
--- Create Section
-function NovaUI:CreateSection(tab, title)
-    local sec = Instance.new("Frame")
-    sec.Size = UDim2.new(1, 0, 0, 30)
-    sec.BackgroundTransparency = 1
-    sec.Parent = tab.Content
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, 0, 1, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = title
-    lbl.TextColor3 = CurrentColors.Accent
-    lbl.TextSize = 12
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = sec
-    
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(1, 0, 0, 1)
-    line.Position = UDim2.new(0, 0, 1, -1)
-    line.BackgroundColor3 = CurrentColors.Border
-    line.BorderSizePixel = 0
-    line.Parent = sec
-    
-    return sec
-end
-
--- Настройки
-function NovaUI:SetTransparency(enabled)
-    if self.CurrentWindow then
-        local trans = enabled and 0.3 or 0
-        self.CurrentWindow.Main.BackgroundTransparency = trans
-    end
-end
-
-function NovaUI:SetBackground(url)
-    if self.CurrentWindow then
-        local bg = self.CurrentWindow.Main:FindFirstChild("BackgroundImage")
-        if not bg then
-            bg = Instance.new("ImageLabel")
-            bg.Name = "BackgroundImage"
-            bg.Size = UDim2.new(1, 0, 1, 0)
-            bg.BackgroundTransparency = 1
-            bg.ZIndex = 0
-            bg.Parent = self.CurrentWindow.Main
-        end
-        bg.Image = url
-    end
 end
 
 return NovaUI
